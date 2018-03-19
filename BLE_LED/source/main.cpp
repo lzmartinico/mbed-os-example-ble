@@ -18,10 +18,24 @@
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "LEDService.h"
+#include <string>
 
 DigitalOut alivenessLED(LED1, 0);
 DigitalOut actuatedLED(LED2, 0);
 
+/*const char** mac_addrs = (const char *[]){
+    "ed23c0d875cd",
+    "e7311a8eb6d7",
+    "c7bc919b2d17",
+    "ec75a5ed8851",
+    "fe12def2c943",
+    "c03b5cfa00b8",
+    "e0b83a2f802a",
+    "f15576cb0cf8",
+    "f17fb178ea3d",
+    "fd8185988862"
+};*/
+static const char PEER_NAME[] = "tin76";
 const static char     DEVICE_NAME[] = "LED";
 static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID};
 
@@ -46,10 +60,44 @@ void blinkCallback(void)
  * @param[in] params
  *     Information about the characterisitc being updated.
  */
-void onDataWrittenCallback(const GattWriteCallbackParams *params) {
-    if ((params->handle == ledServicePtr->getValueHandle()) && (params->len == 1)) {
-        actuatedLED = *(params->data);
+void advertisementCallback(const Gap::AdvertisementCallbackParams_t *params) {
+    // parse the advertising payload, looking for data type COMPLETE_LOCAL_NAME
+    // The advertising payload is a collection of key/value records where
+    // byte 0: length of the record excluding this byte
+    // byte 1: The key, it is the type of the data
+    // byte [2..N] The value. N is equal to byte0 - 1
+    printf("Received advertisment\r\n");
+    for (uint8_t i = 0; i < params->advertisingDataLen; ++i) {
+
+        const uint8_t record_length = params->advertisingData[i];
+        if (record_length == 0) {
+            continue;
+        }
+        const uint8_t type = params->advertisingData[i + 1];
+        const uint8_t* value = params->advertisingData + i + 2;
+        const uint8_t value_length = record_length - 1;
+        //std::string ss;
+        //ss.assign(value, value+value_length);
+
+        //if(type == GapAdvertisingData::COMPLETE_LOCAL_NAME) {
+            //if ((value_length == sizeof(PEER_NAME)) && (memcmp(value, PEER_NAME, value_length) == 0)) {
+                printf(
+                    "adv %s peerAddr[%02x %02x %02x %02x %02x %02x] rssi %d, isScanResponse %u, AdvertisementType %u\r\n", value_length, value, //ss.c_str(),
+                    params->peerAddr[5], params->peerAddr[4], params->peerAddr[3], params->peerAddr[2],
+                    params->peerAddr[1], params->peerAddr[0], params->rssi, params->isScanResponse, params->type
+                );
+
+                //BLE::Instance().gap().connect(params->peerAddr, Gap::ADDR_TYPE_RANDOM_STATIC, NULL, NULL);
+                //break;
+            //}
+        //}
+        i += record_length;
     }
+}
+
+void onConnectionCallback(const Gap::ConnectionCallbackParams_t *params) {
+    printf("Connected to something\r\n");
+    BLE::Instance().gap().startScan(advertisementCallback);
 }
 
 /**
@@ -93,7 +141,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     }
 
     ble.gap().onDisconnection(disconnectionCallback);
-    ble.gattServer().onDataWritten(onDataWrittenCallback);
+    ble.gap().onConnection(onConnectionCallback);
 
     bool initialValueForLEDCharacteristic = false;
     ledServicePtr = new LEDService(ble, initialValueForLEDCharacteristic);
