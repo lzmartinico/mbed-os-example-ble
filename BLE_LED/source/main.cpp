@@ -18,6 +18,7 @@
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "LEDService.h"
+#include "DistanceService.h"
 #include <string>
 
 DigitalOut alivenessLED(LED1, 0);
@@ -42,6 +43,7 @@ static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID};
 static EventQueue eventQueue(/* event count */ 10 * EVENTS_EVENT_SIZE);
 
 LEDService *ledServicePtr;
+DistanceService *distanceServicePtr;
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 {
@@ -86,7 +88,8 @@ void advertisementCallback(const Gap::AdvertisementCallbackParams_t *params) {
                     params->peerAddr[5], params->peerAddr[4], params->peerAddr[3], params->peerAddr[2],
                     params->peerAddr[1], params->peerAddr[0], params->rssi, params->isScanResponse, params->type
                 );
-
+                distanceServicePtr->updatedistance(params->rssi, *(params->peerAddr), 0);
+                // TODO: exit somehow; this breaks the chance to reconnect 
                 //BLE::Instance().gap().connect(params->peerAddr, Gap::ADDR_TYPE_RANDOM_STATIC, NULL, NULL);
                 //break;
             //}
@@ -144,7 +147,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().onConnection(onConnectionCallback);
 
     bool initialValueForLEDCharacteristic = false;
-    ledServicePtr = new LEDService(ble, initialValueForLEDCharacteristic);
+    distanceServicePtr = new DistanceService(ble);
 
     /* setup advertising */
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
