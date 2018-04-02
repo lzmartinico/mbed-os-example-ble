@@ -48,7 +48,8 @@ void advertisementCallback(const Gap::AdvertisementCallbackParams_t *params) {
         const uint8_t value_length = record_length - 1;
 
         if(type == GapAdvertisingData::COMPLETE_LOCAL_NAME) {
-            if ((value_length == sizeof(PEER_NAME)) && (memcmp(value, PEER_NAME, value_length) == 0)) {
+            // if ((value_length == sizeof(PEER_NAME)) && (memcmp(value, PEER_NAME, value_length) == 0)) {
+            if (value_length > 2 && value[0] == 't' && value[1] == 'i') {
                 printf(
                     "adv peerAddr[%02x %02x %02x %02x %02x %02x] rssi %d, isScanResponse %u, AdvertisementType %u\r\n",
                     params->peerAddr[5], params->peerAddr[4], params->peerAddr[3], params->peerAddr[2],
@@ -164,11 +165,11 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
         return;
     }
 
-    ble.gap().onDisconnection(disconnectionCallback);
-    ble.gap().onConnection(connectionCallback);
+    // ble.gap().onDisconnection(disconnectionCallback);
+    // ble.gap().onConnection(connectionCallback);
 
-    ble.gattClient().onDataRead(triggerToggledWrite);
-    ble.gattClient().onDataWrite(triggerRead);
+    // ble.gattClient().onDataRead(triggerToggledWrite);
+    // ble.gattClient().onDataWrite(triggerRead);
 
     // scan interval: 400ms and scan window: 400ms.
     // Every 400ms the device will scan for 400ms
