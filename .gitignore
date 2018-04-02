@@ -31,3 +31,10 @@ build/
 yotta_modules/
 yotta_targets/
 .DS_Store
+BLE_BatteryLevel/mbed-os/
+BLE_BatteryLevel/mbed_settings.py
+BLE_BatteryLevel/mbed_settings.pyc
+BLE_BatteryLevel/shields/TARGET_ST_BLUENRG/
+BLE_LEDBlinker/mbed-os/
+BLE_LEDBlinker/mbed_settings.py
+BLE_LEDBlinker/shields/TARGET_ST_BLUENRG/
