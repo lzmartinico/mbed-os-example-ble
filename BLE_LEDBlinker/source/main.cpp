@@ -17,118 +17,39 @@
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
-#include "ble/DiscoveredCharacteristic.h"
-#include "ble/DiscoveredService.h"
+// #include "mbed_mem_trace.h"
 
 DigitalOut alivenessLED(LED1, 1);
-static DiscoveredCharacteristic ledCharacteristic;
-static bool triggerLedCharacteristic;
 static const char PEER_NAME[] = "LED";
+static EventQueue eventQueue(/* event count */ 32 * EVENTS_EVENT_SIZE);
 
-static EventQueue eventQueue(/* event count */ 16 * EVENTS_EVENT_SIZE);
+uint8_t mac5_list[10] = {0xcd, 0xd7, 0x17, 0x51, 0x43, 0xb8, 0x2a, 0xf8, 0x3d, 0x62};
+uint8_t mac4_list[10] = {0x75, 0xb6, 0x2d, 0x88, 0xc9, 0x00, 0x80, 0x0c, 0xea, 0x88};
 
 void periodicCallback(void) {
     alivenessLED = !alivenessLED; /* Do blinky on LED1 while we're waiting for BLE events */
 }
 
+void printDevice(uint8_t mac5, uint8_t mac4, int8_t rssi) {
+    printf(":%02x:%02x %d\r\n", mac4, mac5, rssi);
+}
+
+bool isNearBeacon(const Gap::AdvertisementCallbackParams_t *params) {
+    uint8_t mac5 = params->peerAddr[0];
+    uint8_t mac4 = params->peerAddr[1];
+    if (params->rssi >= -93) {
+        for (size_t i = 0; i < 10; i++) {
+            if (mac5_list[i] == mac5 && mac4_list[i] == mac4) return true;
+        }
+    }
+    return false;
+}
+
 void advertisementCallback(const Gap::AdvertisementCallbackParams_t *params) {
-    // parse the advertising payload, looking for data type COMPLETE_LOCAL_NAME
-    // The advertising payload is a collection of key/value records where
-    // byte 0: length of the record excluding this byte
-    // byte 1: The key, it is the type of the data
-    // byte [2..N] The value. N is equal to byte0 - 1
-    for (uint8_t i = 0; i < params->advertisingDataLen; ++i) {
 
-        const uint8_t record_length = params->advertisingData[i];
-        if (record_length == 0) {
-            continue;
-        }
-        const uint8_t type = params->advertisingData[i + 1];
-        const uint8_t* value = params->advertisingData + i + 2;
-        const uint8_t value_length = record_length - 1;
-
-        if(type == GapAdvertisingData::COMPLETE_LOCAL_NAME) {
-            // if ((value_length == sizeof(PEER_NAME)) && (memcmp(value, PEER_NAME, value_length) == 0)) {
-            if (value_length > 2 && value[0] == 't' && value[1] == 'i') {
-                printf(
-                    "adv peerAddr[%02x %02x %02x %02x %02x %02x] rssi %d, isScanResponse %u, AdvertisementType %u\r\n",
-                    params->peerAddr[5], params->peerAddr[4], params->peerAddr[3], params->peerAddr[2],
-                    params->peerAddr[1], params->peerAddr[0], params->rssi, params->isScanResponse, params->type
-                );
-                BLE::Instance().gap().connect(params->peerAddr, Gap::ADDR_TYPE_RANDOM_STATIC, NULL, NULL);
-                break;
-            }
-        }
-        i += record_length;
+    if (isNearBeacon(params)) {
+        eventQueue.call(printDevice, params->peerAddr[0], params->peerAddr[1], params->rssi);
     }
-}
-
-void serviceDiscoveryCallback(const DiscoveredService *service) {
-    if (service->getUUID().shortOrLong() == UUID::UUID_TYPE_SHORT) {
-        printf("S UUID-%x attrs[%u %u]\r\n", service->getUUID().getShortUUID(), service->getStartHandle(), service->getEndHandle());
-    } else {
-        printf("S UUID-");
-        const uint8_t *longUUIDBytes = service->getUUID().getBaseUUID();
-        for (unsigned i = 0; i < UUID::LENGTH_OF_LONG_UUID; i++) {
-            printf("%02x", longUUIDBytes[i]);
-        }
-        printf(" attrs[%u %u]\r\n", service->getStartHandle(), service->getEndHandle());
-    }
-}
-
-void updateLedCharacteristic(void) {
-    if (!BLE::Instance().gattClient().isServiceDiscoveryActive()) {
-        ledCharacteristic.read();
-    }
-}
-
-void characteristicDiscoveryCallback(const DiscoveredCharacteristic *characteristicP) {
-    printf("  C UUID-%x valueAttr[%u] props[%x]\r\n", characteristicP->getUUID().getShortUUID(), characteristicP->getValueHandle(), (uint8_t)characteristicP->getProperties().broadcast());
-    if (characteristicP->getUUID().getShortUUID() == 0xa001) { /* !ALERT! Alter this filter to suit your device. */
-        ledCharacteristic        = *characteristicP;
-        triggerLedCharacteristic = true;
-    }
-}
-
-void discoveryTerminationCallback(Gap::Handle_t connectionHandle) {
-    printf("terminated SD for handle %u\r\n", connectionHandle);
-    if (triggerLedCharacteristic) {
-        triggerLedCharacteristic = false;
-        eventQueue.call(updateLedCharacteristic);
-    }
-}
-
-void connectionCallback(const Gap::ConnectionCallbackParams_t *params) {
-    if (params->role == Gap::CENTRAL) {
-        BLE &ble = BLE::Instance();
-        ble.gattClient().onServiceDiscoveryTermination(discoveryTerminationCallback);
-        ble.gattClient().launchServiceDiscovery(params->handle, serviceDiscoveryCallback, characteristicDiscoveryCallback, 0xa000, 0xa001);
-    }
-}
-
-void triggerToggledWrite(const GattReadCallbackParams *response) {
-    if (response->handle == ledCharacteristic.getValueHandle()) {
-        printf("triggerToggledWrite: handle %u, offset %u, len %u\r\n", response->handle, response->offset, response->len);
-        for (unsigned index = 0; index < response->len; index++) {
-            printf("%c[%02x]", response->data[index], response->data[index]);
-        }
-        printf("\r\n");
-
-        uint8_t toggledValue = response->data[0] ^ 0x1;
-        ledCharacteristic.write(1, &toggledValue);
-    }
-}
-
-void triggerRead(const GattWriteCallbackParams *response) {
-    if (response->handle == ledCharacteristic.getValueHandle()) {
-        ledCharacteristic.read();
-    }
-}
-
-void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *) {
-    printf("disconnected\r\n");
-    /* Start scanning and try to connect again */
-    BLE::Instance().gap().startScan(advertisementCallback);
 }
 
 void onBleInitError(BLE &ble, ble_error_t error)
@@ -165,16 +86,10 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
         return;
     }
 
-    // ble.gap().onDisconnection(disconnectionCallback);
-    // ble.gap().onConnection(connectionCallback);
-
-    // ble.gattClient().onDataRead(triggerToggledWrite);
-    // ble.gattClient().onDataWrite(triggerRead);
-
     // scan interval: 400ms and scan window: 400ms.
     // Every 400ms the device will scan for 400ms
     // This means that the device will scan continuously.
-    ble.gap().setScanParams(400, 400);
+    ble.gap().setScanParams(500, 500);
     ble.gap().startScan(advertisementCallback);
 
     printMacAddress();
@@ -187,7 +102,8 @@ void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context)
 
 int main()
 {
-    triggerLedCharacteristic = false;
+    // mbed_mem_trace_set_callback(mbed_mem_trace_default_callback);
+
     eventQueue.call_every(500, periodicCallback);
 
     BLE &ble = BLE::Instance();

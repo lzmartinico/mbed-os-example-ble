@@ -35,3 +35,4 @@ yotta_targets/
 */mbed-os/
 */mbed_settings.py
 */shields/TARGET_ST_BLUENRG/
+.vscode
