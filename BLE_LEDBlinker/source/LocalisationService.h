@@ -22,7 +22,7 @@ public:
         setupService();
     }
 
-    void updateBeaconRssi(uint8_t rssi, int8_t beacon_id) {
+    void updateBeaconRssi(int8_t rssi, uint8_t beacon_id) {
         beaconRssiValue.rssi = rssi;
         beaconRssiValue.beacon_id = beacon_id;
         ble.gattServer().write(
@@ -45,15 +45,15 @@ public:
         ble.gattServer().addService(localisationService);
     }
 
-    __attribute__((packed))
+    // __attribute__((packed))
     struct BeaconRssiValue {
-        BeaconRssiValue(uint8_t _rssi, int8_t _beacon_id) :
+        BeaconRssiValue(int8_t _rssi, uint8_t _beacon_id) :
             rssi(_rssi),
             beacon_id(_beacon_id)
         {}
 
-        uint8_t rssi;
-        int8_t beacon_id;
+        int8_t rssi;
+        uint8_t beacon_id;
     };
 
     BLE &ble;

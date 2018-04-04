@@ -5,7 +5,9 @@
 // #include "mbed_mem_trace.h"
 
 DigitalOut alivenessLED(LED1, 1);
-static const char PEER_NAME[] = "LED";
+const static char     DEVICE_NAME[] = "LP";
+static const uint16_t uuid16_list[] = {LocalisationService::LOCALISATION_SERVICE_UUID};
+LocalisationService *localisationService;
 static EventQueue eventQueue(/* event count */ 32 * EVENTS_EVENT_SIZE);
 
 uint8_t mac5_list[10] = {0xcd, 0xd7, 0x17, 0x51, 0x43, 0xb8, 0x2a, 0xf8, 0x3d, 0x62};
@@ -34,6 +36,7 @@ void advertisementCallback(const Gap::AdvertisementCallbackParams_t *params) {
 
     if (isNearBeacon(params)) {
         eventQueue.call(printDevice, params->peerAddr[0], params->peerAddr[1], params->rssi);
+        localisationService->updateBeaconRssi(params->rssi, params->peerAddr[0]);
     }
 }
 
@@ -55,6 +58,20 @@ void printMacAddress()
     printf("%02x\r\n", address[0]);
 }
 
+void connectionCallback(const Gap::ConnectionCallbackParams_t *params)
+{
+    (void) params;
+    BLE::Instance().gap().setScanParams(500, 500);
+    BLE::Instance().gap().startScan(advertisementCallback);
+}
+
+void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
+{
+    (void) params;
+    BLE::Instance().gap().stopScan();
+    BLE::Instance().gap().startAdvertising();
+}
+
 void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
 {
     BLE&        ble   = params->ble;
@@ -71,11 +88,17 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
         return;
     }
 
-    // scan interval: 400ms and scan window: 400ms.
-    // Every 400ms the device will scan for 400ms
-    // This means that the device will scan continuously.
-    ble.gap().setScanParams(500, 500);
-    ble.gap().startScan(advertisementCallback);
+    ble.gap().onConnection(connectionCallback);
+    ble.gap().onDisconnection(disconnectionCallback);
+
+    localisationService = new LocalisationService(ble);
+
+    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
+    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LIST_16BIT_SERVICE_IDS, (uint8_t *)uuid16_list, sizeof(uuid16_list));
+    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LOCAL_NAME, (uint8_t *)DEVICE_NAME, sizeof(DEVICE_NAME));
+    ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
+    ble.gap().setAdvertisingInterval(1000); /* 1000ms. */
+    ble.gap().startAdvertising();
 
     printMacAddress();
 }
