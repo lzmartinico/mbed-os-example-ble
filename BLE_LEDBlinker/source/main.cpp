@@ -1,10 +1,3 @@
-
- 
-
-
-
-
-
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
