@@ -1,20 +1,38 @@
+
+ 
+
+
+
+
+
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "LocalisationService.h"
+#include "LSM9DS1.h"
 // #include "mbed_mem_trace.h"
 
 DigitalOut alivenessLED(LED1, 1);
 const static char     DEVICE_NAME[] = "LP";
 static const uint16_t uuid16_list[] = {LocalisationService::LOCALISATION_SERVICE_UUID};
 LocalisationService *localisationService;
+LSM9DS1 imu(p7, p30);
 static EventQueue eventQueue(/* event count */ 32 * EVENTS_EVENT_SIZE);
 
 uint8_t mac5_list[10] = {0xcd, 0xd7, 0x17, 0x51, 0x43, 0xb8, 0x2a, 0xf8, 0x3d, 0x62};
 uint8_t mac4_list[10] = {0x75, 0xb6, 0x2d, 0x88, 0xc9, 0x00, 0x80, 0x0c, 0xea, 0x88};
 
+void readInertial() {
+    imu.readAccel();
+    imu.readGyro();
+    imu.readMag();
+
+    // TODO update characteristic
+}
+
 void periodicCallback(void) {
     alivenessLED = !alivenessLED; /* Do blinky on LED1 while we're waiting for BLE events */
+    readInertial();
 }
 
 void printDevice(uint8_t mac5, uint8_t mac4, int8_t rssi) {
@@ -108,11 +126,25 @@ void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context)
     eventQueue.call(Callback<void()>(&ble, &BLE::processEvents));
 }
 
+//Init LSM9DS1 chip
+void inertialSetup()
+{
+    // Use the begin() function to initialize the LSM9DS0 library.
+    // You can either call it with no parameters (the easy way):
+    uint16_t status = imu.begin();
+ 
+    //Make sure communication is working
+    printf("LSM9DS1 WHO_AM_I's returned: 0x%X\r\n", status);
+    printf("Should be 0x683D\r\n");
+}
+
 int main()
 {
     // mbed_mem_trace_set_callback(mbed_mem_trace_default_callback);
 
     eventQueue.call_every(500, periodicCallback);
+
+    inertialSetup();
 
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(scheduleBleEventsProcessing);
