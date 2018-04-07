@@ -20,8 +20,20 @@ void inertialCallback() {
     imu.readGyro();
     imu.readMag();
 
+    printf("A: %2f, %2f, %2f\r\n", imu.ax, imu.ay, imu.az);
+    printf("G: %2f, %2f, %2f\r\n", imu.gx, imu.gy, imu.gz);       
+    printf("M: %2f, %2f, %2f\r\n\r\n", imu.mx, imu.my, imu.mz);
+
+    printf("raw A: %2d, %2d, %2d\r\n", imu.ax_raw, imu.ay_raw, imu.az_raw);
+    printf("raw G: %2d, %2d, %2d\r\n", imu.gx_raw, imu.gy_raw, imu.gz_raw);       
+    printf("raw M: %2d, %2d, %2d\r\n\r\n", imu.mx_raw, imu.my_raw, imu.mz_raw);
+
     // TODO update characteristic
     localisationService->updateIMU(&imu.gx_raw);
+
+    printf("ble A: %2d, %2d, %2d\r\n", localisationService->IMU_vals.gx_raw, localisationService->IMU_vals.ay_raw, localisationService->IMU_vals.az_raw);
+    printf("ble G: %2d, %2d, %2d\r\n", localisationService->IMU_vals.gx_raw, localisationService->IMU_vals.gy_raw, localisationService->IMU_vals.gz_raw);       
+    printf("ble M: %2d, %2d, %2d\r\n\r\n", localisationService->IMU_vals.mx_raw, localisationService->IMU_vals.my_raw, localisationService->IMU_vals.mz_raw);
 }
 
 void periodicCallback(void) {
@@ -133,7 +145,7 @@ void inertialSetup()
     //Make sure communication is working
     printf("LSM9DS1 WHO_AM_I's returned: 0x%X\r\n", status);
     printf("Should be 0x683D\r\n");
-    printf("Rations are: a %f g %f m %f\r\n", imu.aRes, imu.gRes, imu.mRes);
+    printf("Ratios are: a %f g %f m %f\r\n", imu.aRes, imu.gRes, imu.mRes);
 }
 
 int main()
@@ -143,7 +155,7 @@ int main()
     eventQueue.call_every(500, periodicCallback);
 
     inertialSetup();
-    eventQueue.call_every(500, inertialCallback);
+    eventQueue.call_every(2000, inertialCallback);
 
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(scheduleBleEventsProcessing);
