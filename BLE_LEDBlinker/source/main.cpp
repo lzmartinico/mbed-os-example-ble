@@ -136,9 +136,9 @@ int main()
     // mbed_mem_trace_set_callback(mbed_mem_trace_default_callback);
 
     eventQueue.call_every(500, periodicCallback);
-    eventQueue.call_every(500, inertialCallback);
 
     inertialSetup();
+    eventQueue.call_every(500, inertialCallback);
 
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(scheduleBleEventsProcessing);
