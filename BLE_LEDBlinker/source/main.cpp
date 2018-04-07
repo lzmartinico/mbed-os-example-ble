@@ -15,17 +15,17 @@ static EventQueue eventQueue(/* event count */ 32 * EVENTS_EVENT_SIZE);
 uint8_t mac5_list[10] = {0xcd, 0xd7, 0x17, 0x51, 0x43, 0xb8, 0x2a, 0xf8, 0x3d, 0x62};
 uint8_t mac4_list[10] = {0x75, 0xb6, 0x2d, 0x88, 0xc9, 0x00, 0x80, 0x0c, 0xea, 0x88};
 
-void readInertial() {
+void inertialCallback() {
     imu.readAccel();
     imu.readGyro();
     imu.readMag();
 
     // TODO update characteristic
+    localisationService->updateIMU(&imu.gx_raw);
 }
 
 void periodicCallback(void) {
     alivenessLED = !alivenessLED; /* Do blinky on LED1 while we're waiting for BLE events */
-    readInertial();
 }
 
 void printDevice(uint8_t mac5, uint8_t mac4, int8_t rssi) {
@@ -136,6 +136,7 @@ int main()
     // mbed_mem_trace_set_callback(mbed_mem_trace_default_callback);
 
     eventQueue.call_every(500, periodicCallback);
+    eventQueue.call_every(500, inertialCallback);
 
     inertialSetup();
 

@@ -15,5 +15,10 @@
     },
     "macros": [
         "MBED_MEM_TRACING_ENABLED"
-    ]
+    ],
+    "config":{
+        "main-stack-size": {
+            "value": 2000
+        }
+    }
 }
