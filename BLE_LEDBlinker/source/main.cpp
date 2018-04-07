@@ -72,15 +72,19 @@ void printMacAddress()
 void connectionCallback(const Gap::ConnectionCallbackParams_t *params)
 {
     (void) params;
+    printf("Connected\r\n");
     BLE::Instance().gap().setScanParams(500, 500);
     BLE::Instance().gap().startScan(advertisementCallback);
+    printf("Scanning for beacons started\r\n");
 }
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 {
+    printf("Disconnected\r\n");    
     (void) params;
     BLE::Instance().gap().stopScan();
     BLE::Instance().gap().startAdvertising();
+    printf("Advertising started\r\n");   
 }
 
 void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
@@ -129,6 +133,7 @@ void inertialSetup()
     //Make sure communication is working
     printf("LSM9DS1 WHO_AM_I's returned: 0x%X\r\n", status);
     printf("Should be 0x683D\r\n");
+    printf("Rations are: a %f g %f m %f\r\n", imu.aRes, imu.gRes, imu.mRes);
 }
 
 int main()

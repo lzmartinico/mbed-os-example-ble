@@ -316,7 +316,7 @@ public:
     void setMagODR(mag_odr mRate);
 
 
-private:    
+// private:    
     /**  xgAddress and mAddress store the I2C address
     *  for each sensor.
     */
