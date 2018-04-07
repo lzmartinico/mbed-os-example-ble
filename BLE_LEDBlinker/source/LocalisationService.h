@@ -2,6 +2,7 @@
 #define __BLE_LOCALISATION_SERVICE_H__
 
 #include "ble/BLE.h"
+#include "LSM9DS1.h"
 
 
 class LocalisationService {
@@ -14,7 +15,7 @@ public:
     LocalisationService(BLE &_ble) :
         ble(_ble),
         beaconRssiValue(0, 0),  // TODO set defaults
-        IMU_vals(),
+        imuValues(),
         beaconRssiCharacteristic(
             BEACON_RSSI_CHARACTERISTIC_UUID,
             &beaconRssiValue,
@@ -22,7 +23,7 @@ public:
         ),
         IMUCharacteristic(
             IMU_CHARACTERISTIC_UUID,
-            &IMU_vals,
+            &imuValues,
             GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_NOTIFY
         )
     {
@@ -39,11 +40,19 @@ public:
         );
     }
     
-    void updateIMU(void *data) {
-        memcpy(&IMU_vals, data, sizeof(IMU_vals));
+    void updateIMU(LSM9DS1 &imu) {
+        imuValues.ax_raw = imu.ax_raw;
+        imuValues.ay_raw = imu.ay_raw;
+        imuValues.az_raw = imu.az_raw;
+        imuValues.gx_raw = imu.gx_raw;
+        imuValues.gy_raw = imu.gy_raw;
+        imuValues.gz_raw = imu.gz_raw;
+        imuValues.mx_raw = imu.mx_raw;
+        imuValues.my_raw = imu.my_raw;
+        imuValues.mz_raw = imu.mz_raw;
         ble.gattServer().write(
             IMUCharacteristic.getValueHandle(), 
-            reinterpret_cast<uint8_t *>(&IMU_vals), 
+            reinterpret_cast<uint8_t *>(&imuValues), 
             sizeof(IMUValue)
         );
     }
@@ -80,7 +89,7 @@ public:
 
     BLE &ble;
     BeaconRssiValue beaconRssiValue;
-    IMUValue IMU_vals; 
+    IMUValue imuValues; 
     ReadOnlyGattCharacteristic<BeaconRssiValue> beaconRssiCharacteristic;
     ReadOnlyGattCharacteristic<IMUValue> IMUCharacteristic;
 };

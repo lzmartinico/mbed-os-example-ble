@@ -28,12 +28,11 @@ void inertialCallback() {
     printf("raw G: %2d, %2d, %2d\r\n", imu.gx_raw, imu.gy_raw, imu.gz_raw);       
     printf("raw M: %2d, %2d, %2d\r\n\r\n", imu.mx_raw, imu.my_raw, imu.mz_raw);
 
-    // TODO update characteristic
-    localisationService->updateIMU(&imu.gx_raw);
+    localisationService->updateIMU(imu);
 
-    printf("ble A: %2d, %2d, %2d\r\n", localisationService->IMU_vals.gx_raw, localisationService->IMU_vals.ay_raw, localisationService->IMU_vals.az_raw);
-    printf("ble G: %2d, %2d, %2d\r\n", localisationService->IMU_vals.gx_raw, localisationService->IMU_vals.gy_raw, localisationService->IMU_vals.gz_raw);       
-    printf("ble M: %2d, %2d, %2d\r\n\r\n", localisationService->IMU_vals.mx_raw, localisationService->IMU_vals.my_raw, localisationService->IMU_vals.mz_raw);
+    printf("ble A: %2d, %2d, %2d\r\n", localisationService->imuValues.ax_raw, localisationService->imuValues.ay_raw, localisationService->imuValues.az_raw);
+    printf("ble G: %2d, %2d, %2d\r\n", localisationService->imuValues.gx_raw, localisationService->imuValues.gy_raw, localisationService->imuValues.gz_raw);       
+    printf("ble M: %2d, %2d, %2d\r\n\r\n", localisationService->imuValues.mx_raw, localisationService->imuValues.my_raw, localisationService->imuValues.mz_raw);
 }
 
 void periodicCallback(void) {
