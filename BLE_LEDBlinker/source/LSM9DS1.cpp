@@ -10,6 +10,8 @@ LSM9DS1::LSM9DS1(PinName sda, PinName scl, uint8_t xgAddr, uint8_t mAddr) : i2c(
 uint16_t LSM9DS1::begin(gyro_scale gScl, accel_scale aScl, mag_scale mScl, 
                         gyro_odr gODR, accel_odr aODR, mag_odr mODR)
 {
+    printf("starting begin\r\n");
+
     // Store the given scales in class variables. These scale variables
     // are used throughout to calculate the actual g's, DPS,and Gs's.
     gScale = gScl;
@@ -59,6 +61,8 @@ uint16_t LSM9DS1::begin(gyro_scale gScl, accel_scale aScl, mag_scale mScl,
     initMag(); // "Turn on" all axes of the mag. Set up interrupts, etc.
     setMagODR(mODR); // Set the magnetometer output data rate.
     setMagScale(mScale); // Set the magnetometer's range.
+
+    printf("ending begin\r\n");
     
     // Once everything is initialized, return the WHO_AM_I registers we read:
     return (xgTest << 8) | mTest;

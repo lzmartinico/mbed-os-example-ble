@@ -9,7 +9,7 @@ DigitalOut alivenessLED(LED1, 1);
 const static char     DEVICE_NAME[] = "LP";
 static const uint16_t uuid16_list[] = {LocalisationService::LOCALISATION_SERVICE_UUID};
 LocalisationService *localisationService;
-LSM9DS1 imu(p7, p30);
+LSM9DS1 imu(p30, p7);
 static EventQueue eventQueue(/* event count */ 32 * EVENTS_EVENT_SIZE);
 
 uint8_t mac5_list[10] = {0xcd, 0xd7, 0x17, 0x51, 0x43, 0xb8, 0x2a, 0xf8, 0x3d, 0x62};
@@ -24,15 +24,15 @@ void inertialCallback() {
     printf("G: %2f, %2f, %2f\r\n", imu.gx, imu.gy, imu.gz);       
     printf("M: %2f, %2f, %2f\r\n\r\n", imu.mx, imu.my, imu.mz);
 
-    printf("raw A: %2d, %2d, %2d\r\n", imu.ax_raw, imu.ay_raw, imu.az_raw);
-    printf("raw G: %2d, %2d, %2d\r\n", imu.gx_raw, imu.gy_raw, imu.gz_raw);       
-    printf("raw M: %2d, %2d, %2d\r\n\r\n", imu.mx_raw, imu.my_raw, imu.mz_raw);
+    // printf("raw A: %2d, %2d, %2d\r\n", imu.ax_raw, imu.ay_raw, imu.az_raw);
+    // printf("raw G: %2d, %2d, %2d\r\n", imu.gx_raw, imu.gy_raw, imu.gz_raw);       
+    // printf("raw M: %2d, %2d, %2d\r\n\r\n", imu.mx_raw, imu.my_raw, imu.mz_raw);
 
-    localisationService->updateIMU(imu);
+    // localisationService->updateIMU(imu);
 
-    printf("ble A: %2d, %2d, %2d\r\n", localisationService->imuValues.ax_raw, localisationService->imuValues.ay_raw, localisationService->imuValues.az_raw);
-    printf("ble G: %2d, %2d, %2d\r\n", localisationService->imuValues.gx_raw, localisationService->imuValues.gy_raw, localisationService->imuValues.gz_raw);       
-    printf("ble M: %2d, %2d, %2d\r\n\r\n", localisationService->imuValues.mx_raw, localisationService->imuValues.my_raw, localisationService->imuValues.mz_raw);
+    // printf("ble A: %2d, %2d, %2d\r\n", localisationService->imuValues.ax_raw, localisationService->imuValues.ay_raw, localisationService->imuValues.az_raw);
+    // printf("ble G: %2d, %2d, %2d\r\n", localisationService->imuValues.gx_raw, localisationService->imuValues.gy_raw, localisationService->imuValues.gz_raw);       
+    // printf("ble M: %2d, %2d, %2d\r\n\r\n", localisationService->imuValues.mx_raw, localisationService->imuValues.my_raw, localisationService->imuValues.mz_raw);
 }
 
 void periodicCallback(void) {
@@ -154,11 +154,16 @@ int main()
     eventQueue.call_every(500, periodicCallback);
 
     inertialSetup();
-    eventQueue.call_every(2000, inertialCallback);
+    eventQueue.call_every(1000, inertialCallback);
 
-    BLE &ble = BLE::Instance();
-    ble.onEventsToProcess(scheduleBleEventsProcessing);
-    ble.init(bleInitComplete);
+    // while (1) {
+    //     inertialCallback();
+    //     wait_ms(1000);
+    // }
+
+    // BLE &ble = BLE::Instance();
+    // ble.onEventsToProcess(scheduleBleEventsProcessing);
+    // ble.init(bleInitComplete);
 
     eventQueue.dispatch_forever();
 
