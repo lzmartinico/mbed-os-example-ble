@@ -21,7 +21,7 @@ def collect_rssi():
 def collect_imu():
     if request.method == 'POST':
         content = request.get_json()
-        imu_csv.write(','.join(content["timestamp"] + map(str, content["acc"] + content["gyro"] + content["magn"])) 
+        imu_csv.write(','.join(content["timestamp"] + map(str, content["acc"] + content["gyro"] + content["magn"])) )
         return ""
     else:
         return "Hello IMU!"
