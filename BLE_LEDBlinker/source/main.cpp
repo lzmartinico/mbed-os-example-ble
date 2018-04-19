@@ -153,17 +153,12 @@ int main()
 
     eventQueue.call_every(500, periodicCallback);
 
-    inertialSetup();
-    eventQueue.call_every(1000, inertialCallback);
+    // inertialSetup();
+    // eventQueue.call_every(1000, inertialCallback);
 
-    // while (1) {
-    //     inertialCallback();
-    //     wait_ms(1000);
-    // }
-
-    // BLE &ble = BLE::Instance();
-    // ble.onEventsToProcess(scheduleBleEventsProcessing);
-    // ble.init(bleInitComplete);
+    BLE &ble = BLE::Instance();
+    ble.onEventsToProcess(scheduleBleEventsProcessing);
+    ble.init(bleInitComplete);
 
     eventQueue.dispatch_forever();
 
