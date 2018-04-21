@@ -12,7 +12,9 @@ def demo():
 def collect_rssi():
     if request.method == 'POST':
         content = request.get_json()
-        rssi_csv.write("{},{},{},{}\n".format(content['mac'], content['rssi'], content['x'], content['y']))
+        for elem in content:
+            rssi_csv.write("{},{},{}\n".format(elem['timestamp'], elem['mac'], elem['rssi']))
+        rssi_csv.flush()
         return ""
     else:
         return "Hello Bluetooth!"
@@ -21,7 +23,10 @@ def collect_rssi():
 def collect_imu():
     if request.method == 'POST':
         content = request.get_json()
-        imu_csv.write(','.join(content["timestamp"] + map(str, content["acc"] + content["gyro"] + content["magn"])) )
+        for elem in content:
+            imu_csv.write(','.join([elem["timestamp"]] + list(map(str, elem["acc"] + elem["gyro"] + elem["magn"]))) + "\n")
+        imu_csv.flush()
         return ""
     else:
         return "Hello IMU!"
+
