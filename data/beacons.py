@@ -177,19 +177,29 @@ endpoints = np.concatenate([
     np.array([[x, y] for x in [125, 480] for y in [1040 - 60, 1040 - 120]])
     ])
 
-# now for each vector, get the vector from b8 or 17
-pos_b8 = beacons_pixel[5]
-pos_17 = beacons_pixel[2]
+class Beacon(object):
+    def __init__(self, b_id, pos):
+        self.name = b_id
+        self.pos = pos
+        self.points = pos_from_data(data_for_beacon[b_id])
+        self.rssi = rssi_from_data(data_for_beacon[b_id])
+        self.dist = dist_from_point(pos, self.points)
 
-points_b8 = pos_from_data(data_for_beacon['b8'])
-rssi_b8 = rssi_from_data(data_for_beacon['b8'])
+# # now for each vector, get the vector from b8 or 17
+# pos_b8 = beacons_pixel[5]
+# pos_17 = beacons_pixel[2]
 
-points_17 = pos_from_data(data_for_beacon['17'])
-rssi_17 = rssi_from_data(data_for_beacon['17'])
+# points_b8 = pos_from_data(data_for_beacon['b8'])
+# rssi_b8 = rssi_from_data(data_for_beacon['b8'])
 
-dist_17 = dist_from_point(pos_17, points_17)
-dist_b8 = dist_from_point(pos_b8, points_b8)
+# points_17 = pos_from_data(data_for_beacon['17'])
+# rssi_17 = rssi_from_data(data_for_beacon['17'])
 
+# dist_17 = dist_from_point(pos_17, points_17)
+# dist_b8 = dist_from_point(pos_b8, points_b8)
+
+b_17 = Beacon('17', beacons_pixel[2])
+b_b8 = Beacon('b8', beacons_pixel[5])
 
 def plot_points_on_line(points, line):
     # get an image
