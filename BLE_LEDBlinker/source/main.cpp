@@ -20,15 +20,15 @@ void inertialCallback() {
     imu.readGyro();
     imu.readMag();
 
-    printf("A: %2f, %2f, %2f\r\n", imu.ax, imu.ay, imu.az);
-    printf("G: %2f, %2f, %2f\r\n", imu.gx, imu.gy, imu.gz);       
-    printf("M: %2f, %2f, %2f\r\n\r\n", imu.mx, imu.my, imu.mz);
+    //printf("A: %2f, %2f, %2f\r\n", imu.ax, imu.ay, imu.az);
+    //printf("G: %2f, %2f, %2f\r\n", imu.gx, imu.gy, imu.gz);       
+    //printf("M: %2f, %2f, %2f\r\n\r\n", imu.mx, imu.my, imu.mz);
 
     // printf("raw A: %2d, %2d, %2d\r\n", imu.ax_raw, imu.ay_raw, imu.az_raw);
     // printf("raw G: %2d, %2d, %2d\r\n", imu.gx_raw, imu.gy_raw, imu.gz_raw);       
     // printf("raw M: %2d, %2d, %2d\r\n\r\n", imu.mx_raw, imu.my_raw, imu.mz_raw);
 
-    // localisationService->updateIMU(imu);
+    localisationService->updateIMU(imu);
 
     // printf("ble A: %2d, %2d, %2d\r\n", localisationService->imuValues.ax_raw, localisationService->imuValues.ay_raw, localisationService->imuValues.az_raw);
     // printf("ble G: %2d, %2d, %2d\r\n", localisationService->imuValues.gx_raw, localisationService->imuValues.gy_raw, localisationService->imuValues.gz_raw);       
@@ -46,10 +46,10 @@ void printDevice(uint8_t mac5, uint8_t mac4, int8_t rssi) {
 bool isNearBeacon(const Gap::AdvertisementCallbackParams_t *params) {
     uint8_t mac5 = params->peerAddr[0];
     uint8_t mac4 = params->peerAddr[1];
-    if (params->rssi >= -93) {
-        for (size_t i = 0; i < 10; i++) {
-            if (mac5_list[i] == mac5 && mac4_list[i] == mac4) return true;
-        }
+    //if (params->rssi >= -93) {
+    for (size_t i = 0; i < 10; i++) {
+        if (mac5_list[i] == mac5 && mac4_list[i] == mac4) return true;
+    //    }
     }
     return false;
 }
@@ -57,7 +57,7 @@ bool isNearBeacon(const Gap::AdvertisementCallbackParams_t *params) {
 void advertisementCallback(const Gap::AdvertisementCallbackParams_t *params) {
 
     if (isNearBeacon(params)) {
-        eventQueue.call(printDevice, params->peerAddr[0], params->peerAddr[1], params->rssi);
+        //eventQueue.call(printDevice, params->peerAddr[0], params->peerAddr[1], params->rssi);
         localisationService->updateBeaconRssi(params->rssi, params->peerAddr[0]);
     }
 }
@@ -83,19 +83,19 @@ void printMacAddress()
 void connectionCallback(const Gap::ConnectionCallbackParams_t *params)
 {
     (void) params;
-    printf("Connected\r\n");
+    //printf("Connected\r\n");
     BLE::Instance().gap().setScanParams(500, 500);
     BLE::Instance().gap().startScan(advertisementCallback);
-    printf("Scanning for beacons started\r\n");
+    //printf("Scanning for beacons started\r\n");
 }
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 {
-    printf("Disconnected\r\n");    
+    //printf("Disconnected\r\n");    
     (void) params;
     BLE::Instance().gap().stopScan();
     BLE::Instance().gap().startAdvertising();
-    printf("Advertising started\r\n");   
+    //printf("Advertising started\r\n");   
 }
 
 void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
@@ -126,7 +126,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().setAdvertisingInterval(100);
     ble.gap().startAdvertising();
 
-    printMacAddress();
+    //printMacAddress();
 }
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
@@ -153,8 +153,8 @@ int main()
 
     eventQueue.call_every(500, periodicCallback);
 
-    // inertialSetup();
-    // eventQueue.call_every(1000, inertialCallback);
+    //inertialSetup();
+    //eventQueue.call_every(50, inertialCallback);
 
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(scheduleBleEventsProcessing);
