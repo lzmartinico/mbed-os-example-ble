@@ -3,7 +3,8 @@ import csv
 import plotly
 import plotly.graph_objs as go
 from PIL import Image, ImageDraw, ImageFont
-from scipy.ndimage import gaussian_filter
+from scipy.ndimage import gaussian_filter, gaussian_filter1d
+from math import asin, acos, degrees, sin, cos, pi
 
 plotly.offline.init_notebook_mode(connected=True)
 py = plotly.offline
@@ -31,6 +32,8 @@ def read_data():
         data_for_beacon[beacon].append(row)
 
     return data_for_beacon
+
+data_for_beacon = read_data()
     
 # global coordinates to pixels conversion
 
@@ -166,3 +169,222 @@ def plot_rssi_f_dist(b_id, b_pos):
     
 def normalize(array):
     return (array - np.mean(array)) / np.std(array)
+
+# RSSI along different radii
+
+endpoints = np.concatenate([
+    np.stack([np.linspace(125, 480, 6), np.full(6, 1040)], axis=1), 
+    np.array([[x, y] for x in [125, 480] for y in [1040 - 60, 1040 - 120]])
+    ])
+
+# now for each vector, get the vector from b8 or 17
+pos_b8 = beacons_pixel[5]
+pos_17 = beacons_pixel[2]
+
+points_b8 = pos_from_data(data_for_beacon['b8'])
+rssi_b8 = rssi_from_data(data_for_beacon['b8'])
+
+points_17 = pos_from_data(data_for_beacon['17'])
+rssi_17 = rssi_from_data(data_for_beacon['17'])
+
+dist_17 = dist_from_point(pos_17, points_17)
+dist_b8 = dist_from_point(pos_b8, points_b8)
+
+
+def plot_points_on_line(points, line):
+    # get an image
+    img = Image.open('map.png')
+    fnt = ImageFont.truetype('/Users/piotr/Library/Fonts/Literation Mono Powerline.ttf', 40)
+    
+    d = ImageDraw.Draw(img)
+
+    for point in points:
+        x = point[0]
+        y = point[1]
+        d.ellipse([x-2, y-2, x+2, y+2], outline=(255,0,0,0), fill=(255,0,0,0))
+        
+    for point in line:
+        x = point[0]
+        y = point[1]
+        d.ellipse([x-2, y-2, x+2, y+2], outline=(0,255,0,0), fill=(0,255,0,0))
+
+    img.show()
+
+    
+def dist_from_line(points, start, end):
+    return np.absolute(np.cross(end-start,points-start) / np.linalg.norm(end - start))
+    
+    
+def map_points_on_line(points, start, end):
+    line = np.stack([np.linspace(start[0], end[0]), np.linspace(start[1], end[1])], axis=1)
+    margin = dist_from_line(points, start, end)
+    plot_points_on_line(points_b8[margin < 20], line)
+
+    
+def plot_rssi_dist(rssi, dist, title):
+    f = bestfit_rssi_dist(rssi, dist)
+    domain = np.linspace(0, 650)
+    py.iplot({
+        "data": [
+            go.Scatter(x=dist, y=rssi, mode='markers'),
+            go.Scatter(x=domain, y=f(domain))
+        ],
+        "layout": go.Layout(title=title)
+    }) 
+    
+
+def plot_rssi_dist_on_line(points, rssi, start, end):
+    dist = dist_from_point(points, start)
+    margin = dist_from_line(points, start, end)
+    plot_rssi_dist(rssi[margin < 20], dist[margin < 20], title=end)
+        
+    
+def plot_all(points, rssi, start, beacon):
+    dist = dist_from_point(points, start)
+    domain = np.linspace(0, 650)
+    fitlines = []
+    ends = []
+    for end in endpoints:
+        margin = dist_from_line(points, start, end)
+        line_dist = dist[margin < 20]
+        line_rssi = rssi[margin < 20]
+        f = bestfit_rssi_dist(line_rssi, line_dist)
+#         fitlines.append(f)
+#         ends.append(end)
+
+        py.iplot({
+            "data": [go.Scatter(x=line_dist, y=line_rssi, mode='markers')] + [go.Scatter(x=domain, y=f(domain))],
+            "layout": go.Layout(title=repr(list(end)))
+        }) 
+        
+#     py.iplot({
+#         "data": [go.Scatter(x=dist, y=rssi, mode='markers')] + [go.Scatter(x=domain, y=f(domain), name=repr(list(end))) for (f, end) in zip(fitlines, ends)],
+#         "layout": go.Layout(title=beacon)
+#     }) 
+
+def gamma(a, b, c):
+    cosval = (a ** 2 + b ** 2 - c ** 2)/(2.0 * a * b)
+    if cosval > 1.:
+        cosval = 1.
+    elif cosval < -1.:
+        cosval = -1.
+    return acos(cosval)
+
+r = np.linalg.norm(np.array(pos_b8 - pos_17, dtype=np.float))
+alpha = asin(v[1] / v[0])
+
+def get_position_from_dist(r_17, r_b8):    
+    beta = gamma(r_17, r, r_b8)
+    return pos_17 + [r_17 * cos(alpha + beta), r_17 * sin(alpha + beta)]
+
+def get_r_17_b8(point):
+    r_17 = np.linalg.norm(point - pos_17)
+    r_b8 = np.linalg.norm(point - pos_b8)
+    return np.array([r_17, r_b8])
+
+def reflect(point):
+    return get_position_from_dist(*get_r_17_b8(point))
+    
+# now apply to our test data
+# but we have them in order
+# now we want to read them in a way so that we always have last reading from 17 and b8
+
+def read_data_17_b8():
+    with open('rssi_sat.csv', 'rb') as f:
+        reader = csv.reader(f)
+        rssi_17_b8 = []
+        positions_17_b8 = []
+        last_17 = -70
+        last_b8 = -70
+        for [b_id, rssi, x, y] in reader:
+            rssi, x, y = int(rssi), (int(x) + 390.) / 3, (int(y) + 960.) / 3
+            if b_id == '17' and rssi > -80:
+                last_17 = rssi
+                rssi_17_b8.append(np.array([last_17, last_b8], dtype=np.float))
+                positions_17_b8.append(np.array([x, y], dtype=np.float))
+            elif b_id == 'b8' and rssi > -80:
+                last_b8 = rssi
+                rssi_17_b8.append(np.array([last_17, last_b8], dtype=np.float))
+                positions_17_b8.append(np.array([x, y], dtype=np.float))
+
+    return (np.array(rssi_17_b8, dtype=np.float), np.array(positions_17_b8, dtype=np.float))
+
+rssi_17_b8, positions_17_b8 = read_data_17_b8()
+
+f_dist_rssi_17 = np.poly1d(np.polyfit(rssi_17, dist_17, 2))
+f_dist_rssi_b8 = np.poly1d(np.polyfit(rssi_b8, dist_b8, 2))
+
+def plot_f_dist_rssi(rssi, dist, f, title='', low=-100):
+    domain = np.linspace(low, -50)
+    py.iplot({
+        "data": [
+            go.Scatter(x=rssi, y=dist, mode='markers'),
+            go.Scatter(x=domain, y=f(domain))
+        ],
+        "layout": go.Layout(title=title)
+    })
+
+# plot rssi as function of distance from beacon
+
+def get_rel_dist_from_17_b8(rssi):
+    return np.array([f_dist_rssi_17(rssi[0]), f_dist_rssi_b8(rssi[1])])
+
+def get_pos_from_rssi(rssi):
+    return get_position_from_dist(*get_rel_dist_from_17_b8(rssi))
+
+def plot_predictions(rssi, positions, start, n):
+    stop = start + n
+    smooth_rssi = gaussian_filter1d(rssi, sigma=16, axis=0)
+    estimated_position = np.apply_along_axis(get_pos_from_rssi, 1, smooth_rssi)
+    
+    py.iplot({
+        "data": [
+            go.Scatter(x=positions[start:stop,0], y=positions[start:stop,1]),
+            go.Scatter(x=estimated_position[start:stop,0], y=estimated_position[start:stop,1])
+        ],
+        "layout": go.Layout(
+            title='beacons',
+            xaxis=dict(
+                range=[-200, 800]
+            ),
+            yaxis=dict(
+                range=[1050, 300]
+            )
+        )
+    })
+    
+    py.iplot({
+        "data": [
+            go.Scatter(x=np.linspace(0, 100, n), y=positions[start:stop,0]),
+            go.Scatter(x=np.linspace(0, 100, n), y=estimated_position[start:stop,0])
+        ],
+        "layout": go.Layout(
+            title='x'
+        )
+    })
+    
+    py.iplot({
+        "data": [
+            go.Scatter(x=np.linspace(0, 100, n), y=positions[start:stop,1]),
+            go.Scatter(x=np.linspace(0, 100, n), y=estimated_position[start:stop,1])
+        ],
+        "layout": go.Layout(
+            title='y'
+        )
+    })
+
+def rssi_changes(b_id, b_pos, start, n):
+    stop = start + n
+    data = data_for_beacon[b_id]
+    rssi = rssi_from_data(data)
+    dist = dist_from_point(b_pos, pos_from_data(data))
+    normalized_rssi = normalize(rssi)[start:stop]
+    normalized_dist = normalize(dist)[start:stop]
+    filtered_rssi = gaussian_filter(normalized_rssi, sigma=6)
+    n = len(rssi)
+    datalines = ['normalized_rssi', 'normalized_dist', 'filtered_rssi']
+
+    py.iplot({
+        'data': [go.Scatter(name=data, x=np.linspace(0, 100, n), y=locals()[data]) for data in datalines],
+        'layout': go.Layout(title=b_id)
+    })
