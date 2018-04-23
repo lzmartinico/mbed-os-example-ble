@@ -398,3 +398,74 @@ def rssi_changes(b_id, b_pos, start, n):
         'data': [go.Scatter(name=data, x=np.linspace(0, 100, n), y=locals()[data]) for data in datalines],
         'layout': go.Layout(title=b_id)
     })
+
+def plot_rssi_actual_and_predicted(actual, predicted, start, n):
+    stop = start + n
+    domain = np.linspace(0, 1, n)
+    
+    def plot(i, name):
+        py.iplot({
+            "data": [
+                go.Scatter(x=domain, y=actual[start:stop, i], name='actual'),
+                go.Scatter(x=domain, y=predicted[start:stop, i], name='predicted')
+            ],
+            "layout": go.Layout(
+                title=name,
+                yaxis=dict(
+                    range=[-100, -50]
+                )
+            )
+        })
+        
+    plot(0, '17')
+    plot(1, 'b8')
+
+    
+plot_rssi_actual_and_predicted(rssi_17_b8, estimate_rssi(positions_17_b8), 0, 3100)
+
+# okay now need a model of ideal RSSI = f(dist_17, dist_b8)
+
+def f_rssi_dist_poly2d(params):
+    return polyval2d(dist_from_17, dist_from_b8, np.reshape(params, (2, 3)))
+
+def fun_17(params):
+    return rssi_17_b8[:,0] - f_rssi_dist_poly2d(params)
+
+def fun_b8(params):
+    return rssi_17_b8[:,1] - f_rssi_dist_poly2d(params)
+
+x0 = np.random.normal(size=6)
+# x0 = np.zeros(6)o
+
+pred_rssi_17 = f_rssi_dist_poly2d(least_squares(fun_17, x0).x)
+pred_rssi_b8 = f_rssi_dist_poly2d(least_squares(fun_b8, x0).x)
+
+pred_rssi_17_sv = b_17.f_rssi_dist(dist_from_17)
+pred_rssi_b8_sv = b_b8.f_rssi_dist(dist_from_b8)
+
+
+def plot_dist_actual_and_predicted(actual, predicted, predicted_sv, name, start, n):
+    stop = start + n
+    domain = np.linspace(0, 1, n)
+    
+    py.iplot({
+        "data": [
+            go.Scatter(x=domain, y=actual[start:stop], name='actual'),
+            go.Scatter(x=domain, y=predicted[start:stop], name='predicted'),
+            go.Scatter(x=domain, y=predicted_sv[start:stop], name='predicted single var')
+        ],
+        "layout": go.Layout(
+            title=name,
+            yaxis=dict(
+                range=[-105, -50]
+            )
+        )
+    })
+
+
+plot_dist_actual_and_predicted(rssi_17_b8[:,0], pred_rssi_17, pred_rssi_17_sv, '17', 0, 3000)
+plot_dist_actual_and_predicted(rssi_17_b8[:,1], pred_rssi_b8, pred_rssi_b8_sv, 'b8', 0, 3000)
+
+# okay now get covariance of rssi
+
+r_cov = np.cov([pred_rssi_17 - rssi_17_b8[:, 0], pred_rssi_b8 - rssi_17_b8[:, 1]])
