@@ -22,16 +22,14 @@ def read_data(filename):
         positions = []
         last_17 = -70
         last_b8 = -70
+        last_non_17_b8 = -70
+        last_non_17_b8_i = None
         
-        def rssi_row(b_id, rssi):
-            res = np.zeros(11, dtype=np.float)
-            i = beacon_ids.index(b_id)
-            res[2], res[5], res[i] = last_17, last_b8, rssi
-            return res
-        
-        def rssi_row_b8_17():
+        def rssi_row():
             res = np.zeros(11, dtype=np.float)
             res[2], res[5] = last_17, last_b8
+            if last_non_17_b8_i is not None:
+                res[last_non_17_b8_i] = last_non_17_b8
             return res
         
         for [b_id, rssi, x, y] in reader:
@@ -39,15 +37,16 @@ def read_data(filename):
             
             if b_id == '17':
                 last_17 = rssi
-                rssis.append(rssi_row_b8_17())
-                positions.append(np.array([x, y], dtype=np.float))
+                rssis.append(rssi_row())
             elif b_id == 'b8':
                 last_b8 = rssi
-                rssis.append(rssi_row_b8_17())
-                positions.append(np.array([x, y], dtype=np.float))
+                rssis.append(rssi_row())
             elif b_id in beacon_ids:
-                rssis.append(rssi_row(b_id, rssi))
-                positions.append(np.array([x, y], dtype=np.float))
+                last_non_17_b8 = rssi
+                last_non_17_b8_i = beacon_ids.index(b_id)
+                rssis.append(rssi_row())
+        
+            positions.append(np.array([x, y], dtype=np.float))
 
     return (np.array(rssis, dtype=np.float), np.array(positions, dtype=np.float))
 
@@ -59,16 +58,14 @@ def read_data_with_timestamp(filename):
         timestamps = []
         last_17 = -70
         last_b8 = -70
+        last_non_17_b8 = -70
+        last_non_17_b8_i = None
         
-        def rssi_row(b_id, rssi):
-            res = np.zeros(11, dtype=np.float)
-            i = beacon_ids.index(b_id)
-            res[2], res[5], res[i] = last_17, last_b8, rssi
-            return res
-        
-        def rssi_row_b8_17():
+        def rssi_row():
             res = np.zeros(11, dtype=np.float)
             res[2], res[5] = last_17, last_b8
+            if last_non_17_b8_i is not None:
+                res[last_non_17_b8_i] = last_non_17_b8
             return res
         
         for [timestamp, b_id, rssi, x, y] in reader:
@@ -76,12 +73,14 @@ def read_data_with_timestamp(filename):
             
             if b_id == '17':
                 last_17 = rssi
-                rssis.append(rssi_row_b8_17())
+                rssis.append(rssi_row())
             elif b_id == 'b8':
                 last_b8 = rssi
-                rssis.append(rssi_row_b8_17())
+                rssis.append(rssi_row())
             elif b_id in beacon_ids:
-                rssis.append(rssi_row(b_id, rssi))
+                last_non_17_b8 = rssi
+                last_non_17_b8_i = beacon_ids.index(b_id)
+                rssis.append(rssi_row())
                 
             positions.append(np.array([x, y], dtype=np.float))
             timestamps.append(timestamp)
