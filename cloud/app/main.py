@@ -12,8 +12,7 @@ def demo():
 def collect_rssi():
     if request.method == 'POST':
         content = request.get_json()
-        for elem in content:
-            rssi_csv.write("{},{},{}\n".format(elem['timestamp'], elem['mac'], elem['rssi']))
+        rssi_csv.write("{},{},{},{},{}\n".format(content['timestamp'], content['mac'], content['rssi'], content['x'], content['y']))
         rssi_csv.flush()
         return ""
     else:
@@ -30,3 +29,5 @@ def collect_imu():
     else:
         return "Hello IMU!"
 
+if __name__ = "__main__":
+    app.run(host="10.164.0.3",port=8080,ssl_context=('cert.pem', 'key.pem')) 
