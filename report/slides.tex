@@ -2,6 +2,18 @@
 \usepackage{graphicx}
 \usepackage{multicol}
 \usepackage[export]{adjustbox}
+\def\ps@nofooter{\let\@mkboth\markboth
+\def\@oddfoot{\empty}%
+\def\@oddhead{\@tempdima=\textwidth \advance\@tempdima-45mm
+            \vbox{\setcolour{\bar@colour}\hrule \@depth3pt
+                \@width\@tempdima \vskip1.5pt \setcolour{\info@colour}
+                    \hbox to\@tempdima{\footnotesize\csslide@font
+                                        \extra@info\hfill\thepage}}%
+            \vbox to\z@{\vss\hbox to45mm{
+                \resizebox{45mm}{!}{\includegraphics{school_of_informatics}}\hss}\vss
+                \vskip2\headheight}}%
+\def\@evenfoot{\@oddfoot}%
+\def\@evenhead{\@oddhead}}
 \graphicspath{{./images/}}
 \begin{document}
 
@@ -20,6 +32,7 @@
     Due to limited processing power, the firmware running on the board is limitied to scanning for Bluetooth Beacons and updating a BLE Characteristic with their RSSI strength
 \end{slide}
 \begin{slide}{Android App}
+    \thispagestyle{nofooter}
     \begin{multicols}{2}
         The app acts as a Bluetooth gateway, connecting to the board to read from its LocationService, and forward a timestamped RSSI, BeaconID pair to the server.\\
         Additionally, we display a map of the 5th floor, and a location marker, which can be manually modified based on the board's position to collect training data.
@@ -40,5 +53,27 @@ To ensure all data is transimitted securely, the server runs over HTTPS, using a
     KNN
     Kalman Filters
 \end{slide}
-\end{document}
+\begin{slide}{Collected data}
+    \thispagestyle{nofooter}
+    
+    \begin{multicols}{2}
+    \includegraphics[width=0.9\linewidth]{b8_read.png}
+    \includegraphics[width=0.9\linewidth]{2a_read.png}
+    \end{multicols}
+\end{slide}
 
+\begin{slide}{Conversion to/from global coordinates}
+\begin{itemize}
+\item We need to convert between global coordinates and pixel coordinates.
+\item For the tiny area of a building, we can approximate spherical coordinates with Cartesian coordinates.
+\item We translate the coordinates vectors so that the origin is at the NE corner of the floor, and then perform rotation and scaling by multiply a vector by a 2x2 matrix (or its inverse).
+\item The conversion matrix was found by taking the global / pixel coordinates of three points and solving a linear equation.
+\end{itemize}
+\end{slide}
+
+\begin{slide}{Does free-space propagation model hold?}
+    \thispagestyle{nofooter}
+\includegraphics[scale=0.6]{images/different_directions.png}
+\end{slide}
+
+\end{document}

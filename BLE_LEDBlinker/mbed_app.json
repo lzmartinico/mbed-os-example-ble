@@ -12,5 +12,13 @@
             "target.features_add": ["BLE"],
             "target.extra_labels_add": ["ST_BLUENRG"]
         }
+    },
+    "macros": [
+        "MBED_MEM_TRACING_ENABLED"
+    ],
+    "config":{
+        "main-stack-size": {
+            "value": 3000
+        }
     }
 }
