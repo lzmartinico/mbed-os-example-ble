@@ -77,32 +77,43 @@ To ensure all data is transimitted securely, the server runs over HTTPS, using a
 \end{slide}
 
 \begin{slide}{Idea: trilateration on beacons 17 and b8}
-\includegraphics[width=\linewidth]{images/dist_f_rssi_17.png}
+    \centering
+\includegraphics[width=0.55\linewidth]{images/dist_f_rssi_17.png}
+
 We fit a quadratic polynomial to find distance from 17 and b8 as a function of signal strength. A polynomial in two variables gives slightly better results, giving an average error of 4 meters rather than 5 meters.
 \end{slide}
 
 \begin{slide}{Idea: trilateration on beacons 17 and b8}
-\includegraphics[width=\linewidth]{images/dist_f_rssi_b8.png}
+    \centering
+\includegraphics[width=0.55\linewidth]{images/dist_f_rssi_b8.png}
+
 Once we have an estimate of the distance, we can perform trilateration using the law of cosines. If we were using signals from more than two beacons, trilateration would require expensive least squares regression.
 \end{slide}
 
 \begin{slide}{Localisation with triangulation}
-\includegraphics[width=\linewidth]{images/trilateration_x.png}
+    \centering
+\includegraphics[width=0.6\linewidth]{images/trilateration_x.png}
+
 A test using the triangulation method gives error of more than 4 meters.
 \end{slide}
 
 \begin{slide}{Localisation with triangulation}
-\includegraphics[width=\linewidth]{images/trilateration_y.png}
+    \centering
+\includegraphics[width=0.6\linewidth]{images/trilateration_y.png}
+
 Accuracy could be improved by incorporating signal strength from other beacons.
 \end{slide}
 
 \begin{slide}{Localisation with triangulation}
-\includegraphics[width=\linewidth]{images/trilateration_path_no_kalman.png}
-Applying a Kalman filter only gives slight improvements in numerical terms, but the path 
+    \centering{\includegraphics[width=0.6\linewidth]{images/trilateration_path_no_kalman.png}}
+
+Foobar
 \end{slide}
 
 \begin{slide}{Localisation with triangulation}
-\includegraphics[width=\linewidth]{images/trilateration_path.png}
+    \centering
+\includegraphics[width=0.6\linewidth]{images/trilateration_path.png}
+
 Applying a Kalman filter only gives slight improvements in numerical terms, but the path looks more plausible.
 \end{slide}
 
