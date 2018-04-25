@@ -90,31 +90,52 @@ We fit a quadratic polynomial to find distance from 17 and b8 as a function of s
 Once we have an estimate of the distance, we can perform trilateration using the law of cosines. If we were using signals from more than two beacons, trilateration would require expensive least squares regression.
 \end{slide}
 
-\begin{slide}{Localisation with triangulation}
+\begin{slide}{Localisation with trilateration}
     \centering
 \includegraphics[width=0.6\linewidth]{images/trilateration_x.png}
 
 A test using the triangulation method gives error of more than 4 meters.
 \end{slide}
 
-\begin{slide}{Localisation with triangulation}
+\begin{slide}{Localisation with trilateration}
     \centering
 \includegraphics[width=0.6\linewidth]{images/trilateration_y.png}
 
 Accuracy could be improved by incorporating signal strength from other beacons.
 \end{slide}
 
-\begin{slide}{Localisation with triangulation}
+\begin{slide}{Localisation with trilateration}
     \centering{\includegraphics[width=0.6\linewidth]{images/trilateration_path_no_kalman.png}}
 
-Foobar
+Signal strenth tends to oscillate, and computing position for individual points gives a wiggly path.
 \end{slide}
 
-\begin{slide}{Localisation with triangulation}
+\begin{slide}{Localisation with trilateration}
     \centering
 \includegraphics[width=0.6\linewidth]{images/trilateration_path.png}
 
 Applying a Kalman filter only gives slight improvements in numerical terms, but the path looks more plausible.
+\end{slide}
+
+\begin{slide}{Localisation with KNN}
+    \centering
+\includegraphics[width=0.6\linewidth]{images/knn_x.png}
+
+Using the k-neareast neighbour method gives better results along the x axis (NS): up to two meters with a Kalman filter.
+\end{slide}
+
+\begin{slide}{Localisation with KNN}
+    \centering
+\includegraphics[width=0.6\linewidth]{images/knn_y.png}
+
+...and slightly worse results along the y axis (WE) compared to trilateration: over five meters.
+\end{slide}
+
+\begin{slide}{Localisation with KNN}
+    \centering
+\includegraphics[width=0.6\linewidth]{images/knn_path.png}
+
+Again, applying a Kalman filter gives more a smoother, more realistic path.
 \end{slide}
 
 \end{document}
